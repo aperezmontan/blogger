@@ -5,13 +5,31 @@ function preview({ content, date = new Date() }: { content: string[], date?: Dat
   const filename = title.replace(/(\r\n|\n|\r)/gm, "").split(" ").join("_")
   const year = date.getFullYear();
   const blogContent = content.slice(3).map((line) => {
-    return (
-      `      
-        <p>
-          ${line}
-        </p>
-      `
-    )
+    if (line.includes("image_upload")) {
+      const imageNumber = line.split("_").pop()?.trim();
+
+      return (
+        // Need to fix the src attribute here for when we upload to github
+        `      
+          <div>
+            <img
+              id="image-${imageNumber}"
+              class="blog-content-image"
+              src="/images/${filename}.jpg"
+              alt="${line}"
+            />
+          </div>
+        `
+      )
+    } else {
+      return (
+        `      
+          <p>
+            ${line}
+          </p>
+        `
+      )
+    }
   }).join("")
   const dateString = date.toLocaleDateString('en-us', { weekday: "long", year: "numeric", month: "short", day: "numeric" });
   const isoTime = date.toISOString();
@@ -174,18 +192,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const imageUpload = <HTMLInputElement>document.getElementById("image-upload");
   imageUpload.addEventListener("change", () => {
     if (imageUpload.files !== null) {
-      const fr = new FileReader();
-      fr.readAsDataURL(imageUpload.files[0]);
+      Array.from(imageUpload.files).forEach((file, index) => {
+        const fr = new FileReader();
+        fr.readAsDataURL(file);
 
-      fr.addEventListener("load", () => {
-        const url = fr.result as string;
-        const img = <HTMLImageElement>document.getElementById("title-image");
+        fr.addEventListener("load", () => {
+          const url = fr.result as string;
+          console.log(`image-${index + 1}`)
+          let img = <HTMLImageElement>document.getElementById(`image-${index + 1}`);
 
-        if (img && url) {
-          img.src = url;
-        } else {
-          console.error("There's something wrong with either the image upload element or the url for the upload")
-        }
+          if (index === 0) {
+            img = <HTMLImageElement>document.getElementById("title-image");
+          }
+
+          if (img && url) {
+            img.src = url;
+          } else {
+            console.error("There's something wrong with either the image upload element or the url for the upload")
+          }
+        });
       });
     } else {
       console.error("Image upload files is null");
