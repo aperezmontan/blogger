@@ -4,6 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "build": "parcel build index.html",
+    "dev": "yarn parcel serve index.html",
     "lint": "eslint src --ext .js,.ts,.jsx,.tsx",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -12,7 +14,14 @@
   "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.4.5",
+    "@typescript-eslint/eslint-plugin": "^6.2.1",
+    "@typescript-eslint/parser": "^6.2.1",
+    "eslint": "^8.46.0",
+    "parcel": "^2.9.3",
     "ts-node": "^10.9.1",
     "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "octokit": "^3.1.0"
   }
 }
