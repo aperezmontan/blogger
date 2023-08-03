@@ -1,21 +1,99 @@
-function pageTemplate({ content, date = new Date() }: { content: string[], date?: Date }) {
+function preview({ content, date = new Date() }: { content: string[], date?: Date }) {
   const title = content[0];
   const subtitle = content[1];
   const tldr = content[2];
   const filename = title.replace(/(\r\n|\n|\r)/gm, "").split(" ").join("_")
   const year = date.getFullYear();
   const blogContent = content.slice(3).map((line) => {
-    return (
-      `      
-        <p>
-          ${line}
-        </p>
-      `
-    )
+    if (line.includes("image_upload")) {
+      const imageNumber = line.split("_").pop()?.trim();
+
+      return (
+        // Need to fix the src attribute here for when we upload to github
+        `      
+          <div>
+            <img
+              id="image-${imageNumber}"
+              class="blog-content-image"
+              src="/images/${filename}.jpg"
+              alt="${line}"
+            />
+          </div>
+        `
+      )
+    } else {
+      return (
+        `      
+          <p>
+            ${line}
+          </p>
+        `
+      )
+    }
   }).join("")
   const dateString = date.toLocaleDateString('en-us', { weekday: "long", year: "numeric", month: "short", day: "numeric" });
   const isoTime = date.toISOString();
 
+  const params = {
+    title,
+    subtitle,
+    tldr,
+    filename,
+    year,
+    blogContent,
+    dateString,
+    isoTime,
+  };
+
+  return generatePreviewFromTemplate(params);
+}
+
+function generatePreview(event: Event): void {
+  const previewElement = document.getElementById("preview");
+  let content: string[] = [];
+  const textAreaTarget = event.target as HTMLTextAreaElement;
+  const stringContent = textAreaTarget.value;
+
+  if (!previewElement) {
+    console.error("Preview element was not found");
+    return
+  }
+
+  if (stringContent) {
+    stringContent.split("\n").forEach((line) => {
+      if (line.length > 0) content.push(line);
+    })
+
+    const previewContent = preview({ content });
+    previewElement.innerHTML = previewContent;
+  } else {
+    previewElement.innerHTML = `
+        <div>
+          WHOOPSIES
+        </div>
+      `
+  }
+}
+
+function generatePreviewFromTemplate({
+  title,
+  subtitle,
+  tldr,
+  filename,
+  year,
+  blogContent,
+  dateString,
+  isoTime
+}: {
+  title: string,
+  subtitle: string,
+  tldr: string,
+  filename: string,
+  year: string,
+  blogContent: string,
+  dateString: string,
+  isoTime: string,
+}) {
   return (
     `
       <!DOCTYPE html>
@@ -74,6 +152,7 @@ function pageTemplate({ content, date = new Date() }: { content: string[], date?
                 <h1 class="title-name">${title}</h1>
                 <div>
                   <img
+                    id="title-image"
                     class="blog-content-image"
                     src="/images/${filename}.jpg"
                     alt="${title} TITLE IMAGE"
@@ -105,36 +184,36 @@ function pageTemplate({ content, date = new Date() }: { content: string[], date?
   )
 }
 
-function generatePreview(event: Event): void {
-  const previewElement = document.getElementById("preview");
-  let content: string[] = [];
-  const textAreaTarget = event.target as HTMLTextAreaElement;
-  const stringContent = textAreaTarget.value;
-
-  if (!previewElement) {
-    console.error("Preview element was not found");
-    return
-  }
-
-  if (stringContent) {
-    stringContent.split("\n").forEach((line) => {
-      if (line.length > 0) content.push(line);
-    })
-
-    const previewContent = pageTemplate({ content });
-    previewElement.innerHTML = previewContent;
-  } else {
-    previewElement.innerHTML = `
-        <div>
-          WHOOPSIES
-        </div>
-      `
-  }
-
-}
-
 // addEventListeners to the DOM elements 
 document.addEventListener("DOMContentLoaded", () => {
   const contentTextArea = <HTMLTextAreaElement>document.getElementById("content");
   contentTextArea.addEventListener("change", generatePreview);
+
+  const imageUpload = <HTMLInputElement>document.getElementById("image-upload");
+  imageUpload.addEventListener("change", () => {
+    if (imageUpload.files !== null) {
+      Array.from(imageUpload.files).forEach((file, index) => {
+        const fr = new FileReader();
+        fr.readAsDataURL(file);
+
+        fr.addEventListener("load", () => {
+          const url = fr.result as string;
+          console.log(`image-${index + 1}`)
+          let img = <HTMLImageElement>document.getElementById(`image-${index + 1}`);
+
+          if (index === 0) {
+            img = <HTMLImageElement>document.getElementById("title-image");
+          }
+
+          if (img && url) {
+            img.src = url;
+          } else {
+            console.error("There's something wrong with either the image upload element or the url for the upload")
+          }
+        });
+      });
+    } else {
+      console.error("Image upload files is null");
+    }
+  });
 })
