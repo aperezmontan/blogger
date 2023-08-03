@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "build": "parcel build index.html",
-    "dev": "yarn parcel serve index.html",
+    "dev": "parcel serve index.html",
     "lint": "eslint src --ext .js,.ts,.jsx,.tsx",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
