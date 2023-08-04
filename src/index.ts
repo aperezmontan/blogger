@@ -89,7 +89,7 @@ function generatePreviewFromTemplate({
   subtitle: string,
   tldr: string,
   filename: string,
-  year: string,
+  year: number,
   blogContent: string,
   dateString: string,
   isoTime: string,

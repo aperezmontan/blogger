@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blogger</title>
+    <link rel="stylesheet" href="css/main.css" />
+    <link rel="icon" href="assets/images/favicon.ico" />
+    <link
+      rel="stylesheet"
+      href="//fonts.googleapis.com/css?family=Arima+Madurai&amp;lang=en"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geologica:wght@100;200&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="blogger">
+    <header class="blogger">Blogger</header>
+    <main class="blogger">
+      <div class="content-container container">
+        <div class="content-header header">Content</div>
+        <textarea
+          id="content"
+          class="content-textarea"
+          placeholder="A long, long time ago...."
+        >
+        </textarea>
+        <label for="image-upload">Image Upload</label>
+        <input type="file" id="image-upload" multiple />
+      </div>
+      <div class="preview-button-container button-container">
+        <button id="generate-preview">Generate Preview</button>
+      </div>
+    </main>
+    <section class="preview">
+      <div class="preview-container container">
+        <div class="preview-header header">Preview</div>
+        <div id="preview"></div>
+      </div>
+      <div class="blog-button-container button-container">
+        <button id="generate-blog">Generate Blog</button>
+      </div>
+    </section>
+    <script src="src/index.ts" type="module" defer></script>
+  </body>
+</html>
