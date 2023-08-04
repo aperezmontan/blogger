@@ -1,27 +1,56 @@
-body {
+body.blogger {
   min-height: 100vh;
   min-width: 100vw;
   display: flex;
+  flex-direction: column;
+}
+
+header.blogger {
+  font-family: "Geologica", sans-serif;
+  font-size: xx-large;
+  text-align: center;
+}
+
+main.blogger {
+  font-family: "Geologica", sans-serif;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.container {
+  margin: 0 auto;
+  padding: 0 1rem;
+  width: 80%;
+}
+
+section.preview {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.preview-header.header {
   font-family: "Geologica", sans-serif;
 }
 
-main {
-  width: 100vw;
-  padding: 0 1rem;
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
+.button-container {
+  text-align: center;
 }
 
-.content-container {
-  display: flex;
-  flex-direction: column;
-  height: 25%;
+.header {
+  font-size: larger;
+}
+
+label {
+  font-size: smaller;
 }
 
 textarea {
   width: 100%;
-  height: 100%;
+  height: 25vh;
 }
 
 /* BLOG CSS */
