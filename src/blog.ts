@@ -1,26 +1,28 @@
-export default function preview({ content, date = new Date() }: { content: string[], date?: Date }) {
-  const title = content[0];
-  const subtitle = content[1];
-  const tldr = content[2];
-  const filename = title.replace(/(\r\n|\n|\r)/gm, "").split(" ").join("_")
-  const year = date.getFullYear();
-  const blogContent = content.slice(3).map((line) => {
-    if (line.includes("image_upload")) {
-      const imageNumber = line.split("_").pop()?.trim();
+
+const IMAGE_PLACEHOLDER = "_image_"
+const STATIC_PLACEHOLDER = "_static_";
+
+function generateBlogContent({ content, preview = false }: { content: string[], preview: boolean }): string {
+  debugger
+  return content.slice(3).map((line) => {
+    if (line.includes(IMAGE_PLACEHOLDER)) {
+      const filename = line.split("_").pop()?.trim();
 
       return (
         // Need to fix the src attribute here for when we upload to github
         `      
           <div>
             <img
-              id="image-${imageNumber}"
+              id="image-${filename}"
               class="blog-content-image"
-              src="/images/${filename}.jpg"
+              src="/images/${filename}"
               alt="${line}"
             />
           </div>
         `
       )
+    } else if (line.includes(STATIC_PLACEHOLDER)) {
+      return line.replaceAll(STATIC_PLACEHOLDER, "").trim();
     } else {
       return (
         `      
@@ -31,6 +33,19 @@ export default function preview({ content, date = new Date() }: { content: strin
       )
     }
   }).join("")
+}
+
+export default function blog({ content, date = new Date() }: { content: string[], date?: Date }) {
+
+}
+
+export function generateBlogPreview({ content, date = new Date() }: { content: string[], date?: Date }) {
+  const title = content[0];
+  const subtitle = content[1];
+  const tldr = content[2];
+  const filename = title.replace(/(\r\n|\n|\r)/gm, "").split(" ").join("_")
+  const year = date.getFullYear();
+  const blogContent = generateBlogContent({ content, preview: true })
   const dateString = date.toLocaleDateString('en-us', { weekday: "long", year: "numeric", month: "short", day: "numeric" });
   const isoTime = date.toISOString();
 
