@@ -1,4 +1,4 @@
-import { octo } from "./github";
+import { createBlob, createBranch, createCommit, createTree, getBranchSha, getSHA, octo, updateCommitRef } from "./github";
 import preview from "./blog";
 
 const IMAGES_PATH = "images"
@@ -35,8 +35,37 @@ function generatePreview(event: Event): void {
 // TODO: refactor this
 // addEventListeners to the DOM elements 
 document.addEventListener("DOMContentLoaded", () => {
+
   const generatePreviewButton = <HTMLButtonElement>document.getElementById("generate-preview");
   generatePreviewButton.addEventListener("click", generatePreview);
+
+  const generateBlog = <HTMLButtonElement>document.getElementById("generate-blog");
+  generateBlog.addEventListener("click", () => {
+    return void (async () => {
+      const branch = 'test';
+      const sha = await getSHA();
+
+      if (sha) {
+        const branchSha = await createBranch({ name: branch, sha });
+
+        if (branchSha) {
+          const blobSha = await createBlob();
+
+          if (blobSha) {
+            const treeSha = await createTree({ sha: blobSha, base_tree: branchSha })
+
+            if (treeSha) {
+              const commitSha = await createCommit({ tree: treeSha, message: "test commit", parents: [branchSha] })
+
+              if (commitSha) {
+                const final = await updateCommitRef({ sha: commitSha, branch })
+              }
+            }
+          }
+        }
+      }
+    })()
+  });
 
   const imageUpload = <HTMLInputElement>document.getElementById("image-upload");
   imageUpload.addEventListener("change", () => {
@@ -61,7 +90,7 @@ document.addEventListener("DOMContentLoaded", () => {
               img.src = content;
               try {
                 // TODO: hacky way to split the base64 heading from the actual base64
-                await octo({ path: `${IMAGES_PATH}/${file.name}`, title, content: content.split(',')[1] });
+                await octo({ path: `${IMAGES_PATH}/test-${file.name}`, title, content: content.split(',')[1] });
               } catch (error) {
                 console.error(error)
               }
