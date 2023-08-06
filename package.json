@@ -2,7 +2,6 @@
   "name": "blogger",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
   "scripts": {
     "build": "parcel build index.html",
     "dev": "parcel serve index.html",
