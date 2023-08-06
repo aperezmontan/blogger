@@ -1,22 +1,185 @@
+type ParamsType = {
+  title: string;
+  titleImageFilename: string;
+  subtitle: string;
+  tldr: string;
+  folderName: string;
+  year: number;
+  blogContent: string;
+  dateString: string;
+  isoTime: string;
+}
+
+type BlogObject = {
+  content: string;
+  branchName: string;
+  images?: ImageType[]
+}
+
+export type ImageType = {
+  filename: string;
+  content?: string;
+}
 
 const IMAGE_PLACEHOLDER = "_image_"
 const STATIC_PLACEHOLDER = "_static_";
 
-function generateBlogContent({ content, preview = false }: { content: string[], preview: boolean }): string {
-  debugger
+function readUploadedImage({ imageFile }: { imageFile: File }) {
+  const reader = new FileReader();
+
+  return new Promise((resolve, reject) => {
+    reader.onerror = () => {
+      reader.abort();
+      reject(new DOMException("Problem parsing input file."));
+    };
+
+    reader.onload = () => {
+      resolve(reader.result);
+    };
+
+    reader.readAsDataURL(imageFile);
+  });
+}
+
+function readImages({ imageFiles, folderName }: { imageFiles: FileList, folderName: string }): Promise<ImageType[]> {
+  return Promise.all(Array.from(imageFiles).map(async (imageFile, index) => {
+    const fileNameExtension = imageFile.name.split('.').pop();
+    let filename = `${folderName}-${index + 1}.${fileNameExtension}`;
+
+    if (index == 0) {
+      filename = `${folderName}-title-image.${fileNameExtension}`;
+    }
+
+    try {
+      const base64Result = await readUploadedImage({ imageFile }) as string;
+
+      return {
+        filename,
+        content: base64Result.split(',')[1]
+      }
+    } catch (error) {
+      console.error(error);
+
+      return {
+        filename,
+      } as ImageType
+    }
+  }))
+}
+
+export async function generateBlogObject({ content, imageFiles, preview = true }: { content: string[], imageFiles?: FileList, preview?: boolean }): Promise<BlogObject> {
+  const params = generateParams({ content, imageFiles, preview });
+  const generatedContent = blogTemplate(params);
+  let images = [] as ImageType[];
+
+  if (imageFiles) {
+    images = await readImages({ imageFiles, folderName: params.folderName });
+  }
+
+  return {
+    content: generatedContent,
+    branchName: params.folderName,
+    images
+  } as BlogObject;
+}
+
+export function generatePreviewBlogObject({ content, preview = true }: { content: string[], imageFiles?: FileList, preview?: boolean }): BlogObject {
+  const params = generateParams({ content, preview });
+  const generatedContent = blogTemplate(params);
+
+  return {
+    content: generatedContent,
+    branchName: params.folderName
+  } as BlogObject;
+}
+
+export function placeImagesOnDom({ imageUpload }: { imageUpload: HTMLInputElement }): void {
+  let uploadedImagesTableHTML = "";
+
+  if (imageUpload.files !== null) {
+    Array.from(imageUpload.files).forEach((file, index) => {
+      const fr = new FileReader();
+      const filename = file.name;
+      const title = `${IMAGE_PLACEHOLDER}${index + 1}`;
+
+      if (index === 0) {
+        uploadedImagesTableHTML = `${uploadedImagesTableHTML}<div>${filename} ➡️ TITLE IMAGE</div>`
+      } else {
+        uploadedImagesTableHTML = `${uploadedImagesTableHTML}<div>${filename} ➡️ ${title}</div>`
+      }
+
+      fr.readAsDataURL(file);
+      fr.addEventListener("load", () => {
+        const content = fr.result as string;
+        let img = <HTMLImageElement>document.getElementById(title);
+
+        if (index === 0) {
+          img = <HTMLImageElement>document.getElementById("title-image");
+        }
+
+        if (img && content) {
+          img.src = content;
+          // Use this to get the filename for the upload
+          img.dataset.filename = filename;
+        } else {
+          console.error("There's something wrong with either the image upload or there is no place for it in the textarea")
+        }
+      });
+    });
+
+    // Add table to the DOM
+    const uploadedImagesTable = <HTMLDivElement>document.getElementById("uploaded-images-table")
+    uploadedImagesTable.innerHTML = uploadedImagesTableHTML;
+  } else {
+    console.error("Image upload files is null");
+  }
+}
+
+export function handleImageUpload(event: Event): void {
+  const imageUpload = event.target as HTMLInputElement;
+  placeImagesOnDom({ imageUpload })
+}
+
+function generateParams({ content, imageFiles, preview, date = new Date() }: { content: string[], imageFiles?: FileList, preview: boolean, date?: Date }): ParamsType {
+  const titleImageFileExtension = imageFiles && imageFiles.length > 0 ? imageFiles[0].name.split('.').pop() : "";
+  const title = content[0];
+  const subtitle = content[1];
+  const tldr = content[2];
+  const folderName = title.replace(/[^a-z0-9\s]/gi, '').split(" ").join("_").toLowerCase();
+  const titleImageFilename = `${folderName}-title-image.${titleImageFileExtension}`;
+  const year = date.getFullYear();
+  const blogContent = generateBlogContent({ content, imageFiles, folderName, preview })
+  const dateString = date.toLocaleDateString('en-us', { weekday: "long", year: "numeric", month: "short", day: "numeric" });
+  const isoTime = date.toISOString();
+
+  return {
+    title,
+    titleImageFilename,
+    subtitle,
+    tldr,
+    folderName,
+    year,
+    blogContent,
+    dateString,
+    isoTime,
+  } as ParamsType
+}
+
+function generateBlogContent({ content, imageFiles, folderName, preview }: { content: string[], imageFiles?: FileList, folderName: string, preview: boolean }): string {
   return content.slice(3).map((line) => {
     if (line.includes(IMAGE_PLACEHOLDER)) {
-      const filename = line.split("_").pop()?.trim();
+      const imageNumber = line.split("_").pop()?.trim();
+      const imgId = preview ? `${IMAGE_PLACEHOLDER}${imageNumber}` : `image-${folderName}-${imageNumber}`;
+      const fileNameExtension = imageFiles && imageNumber ? imageFiles[parseInt(imageNumber) - 1].name.split('.').pop() : "";
 
       return (
-        // Need to fix the src attribute here for when we upload to github
         `      
           <div>
             <img
-              id="image-${filename}"
+              id="${imgId}"
               class="blog-content-image"
-              src="/images/${filename}"
-              alt="${line}"
+              src="/images/${folderName}-${imageNumber}.${fileNameExtension}"
+              alt="image-${folderName}-${imageNumber}"
             />
           </div>
         `
@@ -35,53 +198,17 @@ function generateBlogContent({ content, preview = false }: { content: string[], 
   }).join("")
 }
 
-export default function blog({ content, date = new Date() }: { content: string[], date?: Date }) {
-
-}
-
-export function generateBlogPreview({ content, date = new Date() }: { content: string[], date?: Date }) {
-  const title = content[0];
-  const subtitle = content[1];
-  const tldr = content[2];
-  const filename = title.replace(/(\r\n|\n|\r)/gm, "").split(" ").join("_")
-  const year = date.getFullYear();
-  const blogContent = generateBlogContent({ content, preview: true })
-  const dateString = date.toLocaleDateString('en-us', { weekday: "long", year: "numeric", month: "short", day: "numeric" });
-  const isoTime = date.toISOString();
-
-  const params = {
-    title,
-    subtitle,
-    tldr,
-    filename,
-    year,
-    blogContent,
-    dateString,
-    isoTime,
-  };
-
-  return blogTemplate(params);
-}
-
 function blogTemplate({
   title,
+  titleImageFilename,
   subtitle,
   tldr,
-  filename,
+  folderName,
   year,
   blogContent,
   dateString,
   isoTime
-}: {
-  title: string,
-  subtitle: string,
-  tldr: string,
-  filename: string,
-  year: number,
-  blogContent: string,
-  dateString: string,
-  isoTime: string,
-}) {
+}: ParamsType): string {
   return (
     `
       <!DOCTYPE html>
@@ -95,7 +222,7 @@ function blogTemplate({
           <meta name="viewport" content="width=device-width, initial-scale=1" />
           <meta name="HandheldFriendly" content="True" />
 
-          <meta property="og:image" content="/images/${filename}.jpg" />
+          <meta property="og:image" content="/images/${titleImageFilename}" />
           <meta property="og:logo" content="/images/favicon.ico" />
           <meta name="referrer" content="no-referrer-when-downgrade" />
           <meta property="og:site_name" content="aperezmontan.github.io (aalazy)" />
@@ -105,7 +232,7 @@ function blogTemplate({
             property="og:description"
             content="${tldr}"
           />
-          <meta property="og:url" content="/blog/${filename}/" />
+          <meta property="og:url" content="/blog/${folderName}/" />
 
           <meta
             property="article:published_time"
@@ -120,17 +247,17 @@ function blogTemplate({
           <meta name="twitter:description" content="${tldr}" />
           <meta
             name="twitter:image"
-            content="https://aperezmontan.github.io/images/${filename}.jpg"
+            content="https://aperezmontan.github.io/images/${titleImageFilename}"
           />
           <meta name="twitter:image:alt" content="${subtitle}" />
           <meta
             name="twitter:url"
-            content="aperezmontan.github.io/blog/${filename}/"
+            content="aperezmontan.github.io/blog/${folderName}/"
           />
 
           <link rel="icon" type="image/x-icon" href="/images/favicon.ico" />
           <link rel="stylesheet" type="text/css" href="/main.css" />
-          <link rel="canonical" href="/blog/${filename}/" />
+          <link rel="canonical" href="/blog/${folderName}/" />
         </head>
         <body>
           <header>
@@ -142,7 +269,7 @@ function blogTemplate({
                   <img
                     id="title-image"
                     class="blog-content-image"
-                    src="/images/${filename}.jpg"
+                    src="/images/${titleImageFilename}"
                     alt="${title} TITLE IMAGE"
                   />
                 </div>
