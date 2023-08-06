@@ -29,7 +29,8 @@
         >
         </textarea>
         <label for="image-upload">Image Upload</label>
-        <input type="file" id="image-upload" multiple />
+        <input type="file" id="image-upload" accept="image/*" multiple />
+        <div id="uploaded-images-table"></div>
       </div>
       <div class="preview-button-container button-container">
         <button id="generate-preview">Generate Preview</button>
@@ -44,6 +45,7 @@
         <button id="generate-blog">Generate Blog</button>
       </div>
     </section>
+    <pre id="data"></pre>
     <script src="src/index.ts" type="module" defer></script>
   </body>
 </html>
